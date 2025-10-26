@@ -1,8 +1,7 @@
-import base64
-
 import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.client import Config
+from botocore.exceptions import ClientError
 from fastapi import FastAPI, UploadFile
 
 s3_client = boto3.client(
@@ -32,18 +31,16 @@ def cat_img_list():
         key = obj["Key"]
 
         # Get the object
-        file_obj = s3_client.get_object(Bucket=bucket_name, Key=key)
-        file_bytes = file_obj["Body"].read()
 
         # Encode to base64
-        encoded_str = base64.b64encode(file_bytes).decode("utf-8")
 
         # Append metadata + base64
         results.append(
             {
-                "key": key,
-                "size": obj["Size"],
-                "base64": encoded_str,
+                "img_name": key,
+                "img_src": generate_presigned_url(
+                    s3_client, "get_object", {"Bucket": bucket_name, "Key": key}, 300
+                ),
             }
         )
 
@@ -61,3 +58,23 @@ def cat_upload(cat_img: UploadFile):
         Config=config,
         ExtraArgs={"ContentType": cat_img.content_type},
     )
+
+
+def generate_presigned_url(s3_client, client_method, method_parameters, expires_in):
+    """
+    Generate a presigned Amazon S3 URL that can be used to perform an action.
+
+    :param s3_client: A Boto3 Amazon S3 client.
+    :param client_method: The name of the client method that the URL performs.
+    :param method_parameters: The parameters of the specified client method.
+    :param expires_in: The number of seconds the presigned URL is valid for.
+    :return: The presigned URL.
+    """
+    try:
+        url = s3_client.generate_presigned_url(
+            ClientMethod=client_method, Params=method_parameters, ExpiresIn=expires_in
+        )
+    except ClientError:
+        print(f"Couldn't get a presigned URL for client method '{client_method}'.")
+        raise
+    return url
