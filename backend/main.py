@@ -30,11 +30,6 @@ def cat_img_list():
     for obj in response["Contents"]:
         key = obj["Key"]
 
-        # Get the object
-
-        # Encode to base64
-
-        # Append metadata + base64
         results.append(
             {
                 "img_name": key,
