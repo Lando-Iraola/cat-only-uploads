@@ -1,0 +1,3 @@
+$img = [Convert]::ToBase64String([IO.File]::ReadAllBytes("./test_images/in-focus-cat.jpg"))
+$img = [Convert]::ToBase64String([IO.File]::ReadAllBytes("./test_images/no-cat.jpg"))
+$img | uv run main.py

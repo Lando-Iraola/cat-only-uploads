@@ -4,10 +4,11 @@ import base64
 from PIL import Image
 import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
+import time
 
-
+start_time = time.time()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-processor = AutoImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
+processor = AutoImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k", use_fast=True)
 model = AutoModelForImageClassification.from_pretrained("akahana/vit-base-cats-vs-dogs").to(device)
 model.eval()
 
@@ -40,6 +41,7 @@ def is_cat_image(image_bytes: bytes) -> bool:
 
 
 if __name__ == "__main__":
+    
     # Read base64 data from STDIN
     b64_string = sys.stdin.read().strip()
     if not b64_string:
@@ -53,3 +55,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print("🐱 This is a cat!" if is_cat_image(image_bytes) else "🚫 Not a cat.")
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time:.4f} seconds")
