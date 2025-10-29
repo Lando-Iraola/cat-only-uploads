@@ -19,27 +19,36 @@ app = FastAPI()
 def cat_img_list():
     bucket_name = "cats"
 
-    # List up to 25 objects
-    response = s3_client.list_objects_v2(Bucket=bucket_name, MaxKeys=25)
+    try:
+        # List up to 25 objects
+        response = s3_client.list_objects_v2(Bucket=bucket_name, MaxKeys=25)
 
-    if "Contents" not in response:
-        return {"message": "No objects found in bucket."}
+        if "Contents" not in response:
+            return {"message": "No objects found in bucket."}
 
-    results = []
+        results = []
 
-    for obj in response["Contents"]:
-        key = obj["Key"]
+        for obj in response["Contents"]:
+            key = obj["Key"]
 
-        results.append(
-            {
-                "img_name": key,
-                "img_src": generate_presigned_url(
-                    s3_client, "get_object", {"Bucket": bucket_name, "Key": key}, 300
-                ),
-            }
-        )
+            results.append(
+                {
+                    "img_name": key,
+                    "img_src": generate_presigned_url(
+                        s3_client,
+                        "get_object",
+                        {"Bucket": bucket_name, "Key": key},
+                        300,
+                    ),
+                }
+            )
 
-    return results
+        return results
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchBucket":
+            print("lmao no bucket")
+            return []
+        print(e)
 
 
 @app.post("/cats")
@@ -72,4 +81,5 @@ def generate_presigned_url(s3_client, client_method, method_parameters, expires_
     except ClientError:
         print(f"Couldn't get a presigned URL for client method '{client_method}'.")
         raise
+
     return url
